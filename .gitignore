@@ -1,0 +1,22 @@
+# Pastas do Visual Studio
+.vs/
+bin/
+obj/
+
+# Arquivos de build temporários
+*.user
+*.suo
+*.cache
+*.dbmdl
+*.pdb
+
+# Arquivos de configuração locais
+*.userprefs
+*.rsuser
+
+# Arquivos do sistema
+Thumbs.db
+*.DS_Store
+
+# Logs
+*.log
