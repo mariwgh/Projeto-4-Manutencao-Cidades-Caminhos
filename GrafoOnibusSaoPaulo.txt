@@ -1,4 +1,0 @@
-Americana;Campinas;40
-Americana;Limeira;30
-Araçatuba;Bauru;195
-Araçatuba;Panorama;195
