@@ -1,0 +1,65 @@
+Americana;Campinas;40
+Americana;Limeira;30
+Araçatuba;Bauru;195
+Araçatuba;Panorama;195
+Araçatuba;Votuporanga;125
+Araraquara;Catanduva;115
+Araraquara;Ribeirão Preto;92
+Araraquara;São Carlos;45
+Assis;Ourinhos;70
+Assis;Tupã;97
+Assis;Presidente Prudente;126
+Assis;Marília;75
+Barretos;Colômbia;30
+Barretos;Bebedouro;50
+Bauru;Jaú;54
+Bauru;Marília;105
+Bauru;Botucatu;96
+Botucatu;Ourinhos;182
+Botucatu;Iperó;124
+Buri;Sorocaba;168
+Cajati;Juquiá;75
+Campinas;Jundiaí;40
+Campinas;Itu;51
+Campinas;Mogi Guaçu;96
+Mogi Guaçu;Poços de Caldas;103
+Catanduva;São José do Rio Preto;60
+Catanduva;Bebedouro;60
+Cruzeiro;Pindamonhangaba;76
+Cruzeiro;Poços de Caldas; 250
+Iperó;Sorocaba;29
+Iperó;Mairinque;82
+Itu;Mairinque;50
+Itanhaém;Juquiá;98
+Itanhaém;Santos;62
+Itirapina;Jaú;89
+Itirapina;São Carlos;36
+Itirapina;Rio Claro;42
+Jundiaí;São Paulo;49
+Marília;Tupã;74
+Tupã;Panorama;260
+Ourinhos;Marília;105
+Presidente Prudente;Presidente Epitácio;92
+São Paulo;Suzano;31
+São Paulo;Santos;80
+Santos;Suzano;90
+São José dos Campos;São Sebastião;111
+São José dos Campos;Caraguatatuba;91
+São José dos Campos;Taubaté;42
+São Sebastião;Caraguatatba;25
+Caraguatatuba;Ubatuba;50
+Taubaté;Ubatuba;96
+Votuporanga;Rubinéia;115
+São José do Rio Preto;Votuporanga;84
+Limeira;Ribeirão Preto;182
+Limeira;Rio Claro;40
+
+
+
+
+
+
+
+
+
+
