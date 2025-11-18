@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
 public class FilaLista<Tipo> : ListaSimples<Tipo>, IQueue<Tipo>
   where Tipo : IComparable<Tipo>
   {

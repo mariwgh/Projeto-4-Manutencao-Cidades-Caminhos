@@ -9,14 +9,39 @@ using System.Threading.Tasks;
 
 namespace Proj4
 {
-    public class Ligacao : IComparable<Ligacao>
+    public class Ligacao : IComparable<Ligacao>, IRegistro
     {
         string origem, destino;
         int distancia;
+
 
         public int CompareTo(Ligacao other)
         {
             return (origem + destino).CompareTo(other.origem + other.destino);
         }
+
+        public override string ToString()
+        {
+            return $"{Destino} ({Distancia} km)";
+        }
+
+        //IRegistro
+        public int TamanhoRegistro => 54; // Ajuste conforme necessidade
+        public void LerRegistro(System.IO.BinaryReader arquivo, long qualRegistro) { }
+        public void GravarRegistro(System.IO.BinaryWriter arquivo) { }
+
+
+        public Ligacao() { }
+
+        public Ligacao(string origem, string destino, int distancia)
+        {
+            this.origem = origem;
+            this.destino = destino;
+            this.distancia = distancia;
+        }
+
+        public string Origem { get => origem; set => origem = value; }
+        public string Destino { get => destino; set => destino = value; }
+        public int Distancia { get => distancia; set => distancia = value; }
     }
 }
