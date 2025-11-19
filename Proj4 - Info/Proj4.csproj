@@ -48,14 +48,12 @@
   <ItemGroup>
     <Compile Include="Arvore.cs" />
     <Compile Include="Cidade.cs" />
-    <Compile Include="FilaLista.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-    <Compile Include="IQueue.cs" />
     <Compile Include="IRegistro.cs" />
     <Compile Include="Ligacao.cs" />
     <Compile Include="ListaSimples.cs" />

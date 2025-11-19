@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 
 namespace AgendaAlfabetica
 {
-    public class NoLista<Dado> 
-        where Dado :   IComparable<Dado>
+    public class NoLista<Dado> where Dado : IComparable<Dado>
     {
         private Dado info;
         private NoLista<Dado> prox;
