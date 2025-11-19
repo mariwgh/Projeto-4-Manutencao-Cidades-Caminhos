@@ -56,31 +56,10 @@ namespace Proj4
         public double X { get => x; set => x = value; }
         public double Y { get => y; set => y = value; }
 
-        public void LerRegistro(System.IO.BinaryReader arquivo, long qualRegistro)
-        {
-            // Posiciona o ponteiro (se necessário, mas na leitura sequencial não precisa do Seek se ler em ordem)
-            // arquivo.BaseStream.Seek(qualRegistro, SeekOrigin.Begin); 
+        public void LerRegistro(BinaryReader arquivo, long qualRegistro) { }
 
-            // Lê o nome (string fixa de 25 bytes ou chars)
-            // Nota: Depende de como foi gravado. Se foi com BinaryWriter.Write(string), ele tem um prefixo de tamanho.
-            // Se for bytes fixos, precisa ler bytes e converter. Vamos assumir o padrão .NET por enquanto:
-            this.Nome = arquivo.ReadString();
-            this.X = arquivo.ReadDouble();
-            this.Y = arquivo.ReadDouble();
-        }
+        public void GravarRegistro(BinaryWriter arquivo) { }
 
-        public void GravarRegistro(BinaryWriter arquivo) {}
-
-
-        public ListaSimples<Ligacao> Ligacoes
-        {
-            get => ligacoes;
-        }
-
-        public void AdicionarLigacao(Ligacao novaLigacao)
-        {
-            ligacoes.InserirAposFim(novaLigacao);
-        }
     }
 
 }
