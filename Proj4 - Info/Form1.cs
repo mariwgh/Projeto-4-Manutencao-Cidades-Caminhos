@@ -99,94 +99,10 @@ namespace Proj4
             }
         }
 
-        
-        // NAOSEIOQEISSO
-
-        Cidade cidadeAtual = null;
-        List<string> rotaEncontrada = new List<string>();
-
-        private void AtualizarControlesUI()
-        {
-            if (cidadeAtual != null)
-            {
-                txtNomeCidade.Text = cidadeAtual.Nome;
-                udX.Value = (decimal)cidadeAtual.X;
-                udY.Value = (decimal)cidadeAtual.Y;
-
-                dgvLigacoes.DataSource = cidadeAtual.Ligacoes.Listar();
-                dgvLigacoes.Refresh();
-
-                AtualizarComboBoxDestinoLigacao(cidadeAtual.Nome);
-
-                btnAlterarCidade.Enabled = !cidadeAtual.Excluido;
-                btnExcluirCidade.Enabled = !cidadeAtual.Excluido && cidadeAtual.Ligacoes.EstaVazia;
-                btnIncluirCaminho.Enabled = !cidadeAtual.Excluido;
-
-                //txtStatus.Text = cidadeAtual.Excluido ? "CIDADE EXCLUÍDA" : $"Caminhos: {cidadeAtual.Ligacoes.QuantosNos}";
-            }
-            else
-            {
-                txtNomeCidade.Text = "";
-                udX.Value = 0;
-                udY.Value = 0;
-                dgvLigacoes.DataSource = null;
-                //txtStatus.Text = "Nenhuma cidade selecionada";
-                btnAlterarCidade.Enabled = false;
-                btnExcluirCidade.Enabled = false;
-                btnIncluirCaminho.Enabled = false;
-            }
-        }
-        private void AtualizarComboBoxDestino()
-        {
-            List<Cidade> todasCidades = new List<Cidade>();
-            arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(todasCidades);
-
-            var nomesValidos = todasCidades
-                .Where(c => !c.Excluido)
-                .Select(c => c.Nome)
-                .ToList();
-
-            cbxCidadeDestino.DataSource = nomesValidos;
-        }
-        private void AtualizarComboBoxDestinoLigacao(string nomeOrigem)
-        {
-            List<Cidade> todasCidades = new List<Cidade>();
-            arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(todasCidades);
-
-            var destinosPossiveis = todasCidades
-                .Where(c => !c.Excluido && c.Nome != nomeOrigem)
-                .Select(c => c.Nome)
-                .ToList();
-
-            txtNovoDestino.Text = destinosPossiveis.ToString();
-        }
-
 
         // EVENTOS CLICK
 
-        private void btnIncluirCidade_Click(object sender, EventArgs e)
-        {
-            string nome = txtNomeCidade.Text.Trim();
-            double x = (double)udX.Value;
-            double y = (double)udY.Value;
-
-            if (nome != "")
-            {
-                Cidade novaCidade = new Cidade(nome, x, y);
-
-                if (arvoreBuscaBinariaBalanceadaAVL.Existe(novaCidade))
-                {
-                    MessageBox.Show($"Cidade '{nome}' já existe.");
-                }
-                else
-                {
-                    arvoreBuscaBinariaBalanceadaAVL.IncluirNovoDado(novaCidade);
-                    cidadeAtual = novaCidade;
-                    pnlArvore.Refresh();
-                    MessageBox.Show($"Cidade '{nome}' incluída com sucesso!");
-                }
-            }
-        }
+        //verificar (evento Leave do textBox) se a cidade não existe
         private void txtNomeCidade_Leave(object sender, EventArgs e)
         {
             string nomeBuscado = txtNomeCidade.Text.Trim();
@@ -204,17 +120,37 @@ namespace Proj4
                     MessageBox.Show($"A cidade '{nomeBuscado}' não está cadastrada.");
 
                     //habilitar botão Incluir
+                    btnIncluirCidade.Enabled = true;
+
                     //limpa os campos X e Y para uma nova inclusão
                     udX.Value = 0;
                     udY.Value = 0;
                 }
                 else //se a cidade existe
                 {
-                    Cidade dadosDaCidade = arvoreBuscaBinariaBalanceadaAVL.Atual.Info;
+                    btnIncluirCidade.Enabled = false;
 
+                    Cidade dadosDaCidade = arvoreBuscaBinariaBalanceadaAVL.Atual.Info;
                     udX.Value = (decimal)dadosDaCidade.X;
                     udY.Value = (decimal)dadosDaCidade.Y;
                 }
+            }
+        }
+        private void btnIncluirCidade_Click(object sender, EventArgs e)
+        {
+            string nome = txtNomeCidade.Text.Trim();
+            double x = (double)udX.Value;
+            double y = (double)udY.Value;
+
+            if (btnIncluirCidade.Enabled == true)
+            {
+                Cidade novaCidade = new Cidade(nome, x, y);
+
+                arvoreBuscaBinariaBalanceadaAVL.IncluirNovoDado(novaCidade);
+                btnIncluirCidade.Enabled = false;
+
+                pnlArvore.Refresh();
+                MessageBox.Show($"Cidade '{nome}' incluída com sucesso!");
             }
         }
 
