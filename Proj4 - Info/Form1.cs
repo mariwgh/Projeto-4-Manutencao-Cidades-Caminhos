@@ -17,7 +17,7 @@ namespace Proj4
         //cidades.dat: nome cordenadax cordenaday
         //grafoonibus.txt: nomeOrigem nomeDestino distancia
 
-        Arvore<Cidade> arvoreBinaria = new Arvore<Cidade>();
+        Arvore<Cidade> arvoreBuscaBinariaBalanceadaAVL = new Arvore<Cidade>();
 
         const string arqCidades = "cidades.dat";
         const string arqGrafosLigacoes = "GrafoOnibusSaoPaulo.txt";
@@ -57,21 +57,9 @@ namespace Proj4
                 return;
             }
 
-            using (FileStream arq = new FileStream(arqCidades, FileMode.Open))
-            using (BinaryReader leitor = new BinaryReader(arq))
-            {
-                while (leitor.BaseStream.Position < leitor.BaseStream.Length)
-                {
-                    Cidade cidade = new Cidade();
+            //em cada no da arvore, cada cidade tem que ter um atributo de listasimples
 
-                    //em cada no da arvore, cada cidade tem que ter um atributo de listasimples
-
-                    cidade.LerRegistro(leitor, leitor.BaseStream.Position);
-                    //arvoreBinaria.LerArquivoDeRegistros(arqCidades);
-
-                    arvoreBinaria.IncluirNovoDado(cidade);
-                }
-            }
+            arvoreBuscaBinariaBalanceadaAVL.LerArquivoDeRegistros(arqCidades);
         }
 
         private void LerArquivoDeCaminhos()
@@ -92,60 +80,30 @@ namespace Proj4
                 string nomeDestino = partes[1].Trim();
                 int distancia = int.Parse(partes[2].Trim());
 
-                // Inclusão bidirecional (IDA e VOLTA)
+                //inclusão bidirecional (IDA e VOLTA)
                 Ligacao ida = new Ligacao(nomeOrigem, nomeDestino, distancia);
                 Ligacao volta = new Ligacao(nomeDestino, nomeOrigem, distancia);
 
                 //caminhos de cada cidade é info da cidade
-                arvoreBinaria.Atual.Info = ida;
+                Cidade cidadeOrigemParaBusca = new Cidade(nomeOrigem);
+                if (arvoreBuscaBinariaBalanceadaAVL.Existe(cidadeOrigemParaBusca))
+                {
+                    arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.InserirAposFim(ida);
+                }
+
+                Cidade cidadeDestinoParaBusca = new Cidade(nomeDestino);
+                if (arvoreBuscaBinariaBalanceadaAVL.Existe(cidadeDestinoParaBusca))
+                {
+                    arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.InserirAposFim(volta);
+                }
             }
         }
 
-
+        
+        // NAOSEIOQEISSO
 
         Cidade cidadeAtual = null;
         List<string> rotaEncontrada = new List<string>();
-
-
-        
-        private bool TentarAdicionarLigacaoUnidirecional(string nomeOrigem, string nomeDestino, int distancia)
-        {
-            Cidade origemParaBusca = new Cidade(nomeOrigem);
-
-            if (arvoreBinaria.Buscar(origemParaBusca))
-            {
-                Cidade cidadeEncontrada = arvoreBinaria.Atual.Info;
-                Ligacao novaLigacao = new Ligacao(nomeOrigem, nomeDestino, distancia);
-
-                if (!cidadeEncontrada.Ligacoes.Buscar(novaLigacao))
-                {
-                    // Requer InserirEmOrdem na ListaSimples
-                    cidadeEncontrada.Ligacoes.InserirEmOrdem(novaLigacao);
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private bool TentarRemoverLigacaoUnidirecional(string nomeOrigem, string nomeDestino)
-        {
-            Cidade origemParaBusca = new Cidade(nomeOrigem);
-
-            if (arvoreBinaria.Buscar(origemParaBusca))
-            {
-                Cidade cidadeEncontrada = arvoreBinaria.Atual.Info;
-                Ligacao ligacaoParaBusca = new Ligacao(nomeOrigem, nomeDestino, 0);
-
-                if (cidadeEncontrada.Ligacoes.Buscar(ligacaoParaBusca))
-                {
-                    // Requer RemoverAtual na ListaSimples
-                    cidadeEncontrada.Ligacoes.RemoverDado(arvoreBinaria.Atual);
-                    return true;
-                }
-            }
-            return false;
-        }
-
 
         private void AtualizarControlesUI()
         {
@@ -181,7 +139,7 @@ namespace Proj4
         private void AtualizarComboBoxDestino()
         {
             List<Cidade> todasCidades = new List<Cidade>();
-            arvoreBinaria.VisitarEmOrdem(todasCidades);
+            arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(todasCidades);
 
             var nomesValidos = todasCidades
                 .Where(c => !c.Excluido)
@@ -193,7 +151,7 @@ namespace Proj4
         private void AtualizarComboBoxDestinoLigacao(string nomeOrigem)
         {
             List<Cidade> todasCidades = new List<Cidade>();
-            arvoreBinaria.VisitarEmOrdem(todasCidades);
+            arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(todasCidades);
 
             var destinosPossiveis = todasCidades
                 .Where(c => !c.Excluido && c.Nome != nomeOrigem)
@@ -206,15 +164,69 @@ namespace Proj4
 
         // EVENTOS CLICK
 
+        private void btnIncluirCidade_Click(object sender, EventArgs e)
+        {
+            string nome = txtNomeCidade.Text.Trim();
+            double x = (double)udX.Value;
+            double y = (double)udY.Value;
+
+            if (nome != "")
+            {
+                Cidade novaCidade = new Cidade(nome, x, y);
+
+                if (arvoreBuscaBinariaBalanceadaAVL.Existe(novaCidade))
+                {
+                    MessageBox.Show($"Cidade '{nome}' já existe.");
+                }
+                else
+                {
+                    arvoreBuscaBinariaBalanceadaAVL.IncluirNovoDado(novaCidade);
+                    cidadeAtual = novaCidade;
+                    pnlArvore.Refresh();
+                    MessageBox.Show($"Cidade '{nome}' incluída com sucesso!");
+                }
+            }
+        }
+        private void txtNomeCidade_Leave(object sender, EventArgs e)
+        {
+            string nomeBuscado = txtNomeCidade.Text.Trim();
+
+            //se algo foi digitado antes de sair de foco
+            if (!(string.IsNullOrWhiteSpace(nomeBuscado)))
+            {
+                Cidade cidadeChave = new Cidade(nomeBuscado);
+
+                //true se a cidade existe
+                bool cidadeEncontrada = arvoreBuscaBinariaBalanceadaAVL.Existe(cidadeChave);
+
+                if (!cidadeEncontrada) //se a cidade NÃO existe
+                {
+                    MessageBox.Show($"A cidade '{nomeBuscado}' não está cadastrada.");
+
+                    //habilitar botão Incluir
+                    //limpa os campos X e Y para uma nova inclusão
+                    udX.Value = 0;
+                    udY.Value = 0;
+                }
+                else //se a cidade existe
+                {
+                    Cidade dadosDaCidade = arvoreBuscaBinariaBalanceadaAVL.Atual.Info;
+
+                    udX.Value = (decimal)dadosDaCidade.X;
+                    udY.Value = (decimal)dadosDaCidade.Y;
+                }
+            }
+        }
+
         private void btnBuscarCidade_Click(object sender, EventArgs e)
         {
             string nomeBusca = txtNomeCidade.Text.Trim();
             if (string.IsNullOrEmpty(nomeBusca)) return;
 
             Cidade busca = new Cidade(nomeBusca);
-            if (arvoreBinaria.Buscar(busca))
+            if (arvoreBuscaBinariaBalanceadaAVL.Buscar(busca))
             {
-                cidadeAtual = arvoreBinaria.Atual.Info;
+                cidadeAtual = arvoreBuscaBinariaBalanceadaAVL.Atual.Info;
                 AtualizarControlesUI();
                 pnlArvore.Refresh();
             }
@@ -224,43 +236,6 @@ namespace Proj4
                 cidadeAtual = null;
                 AtualizarControlesUI();
             }
-        }
-
-        private void btnIncluirCidade_Click(object sender, EventArgs e)
-        {
-            string nome = txtNomeCidade.Text.Trim();
-            double x = (double)udX.Value;
-            double y = (double)udY.Value;
-
-            if (string.IsNullOrEmpty(nome)) return;
-
-            Cidade novaCidade = new Cidade(nome, x, y);
-
-            if (arvoreBinaria.Buscar(novaCidade))
-            {
-                // Reativa cidade excluída
-                if (arvoreBinaria.Atual.Info.Excluido)
-                {
-                    arvoreBinaria.Atual.Info.Excluido = false;
-                    cidadeAtual = arvoreBinaria.Atual.Info;
-                    AtualizarComboBoxDestino();
-                    pnlArvore.Refresh();
-                    MessageBox.Show($"Cidade '{nome}' reincluída com sucesso!");
-                }
-                else
-                {
-                    MessageBox.Show($"Cidade '{nome}' já existe.");
-                }
-            }
-            else
-            {
-                arvoreBinaria.Incluir(novaCidade);
-                cidadeAtual = novaCidade;
-                AtualizarComboBoxDestino();
-                pnlArvore.Refresh();
-                MessageBox.Show($"Cidade '{nome}' incluída com sucesso!");
-            }
-            AtualizarControlesUI();
         }
 
         private void btnAlterarCidade_Click(object sender, EventArgs e)
@@ -356,7 +331,7 @@ namespace Proj4
         private Dictionary<string, (int distancia, string anterior)> Dijkstra(string nomeInicio)
         {
             List<Cidade> todasCidades = new List<Cidade>();
-            arvoreBinaria.VisitarEmOrdem(todasCidades);
+            arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(todasCidades);
 
             var nosGrafo = todasCidades.Where(c => !c.Excluido).ToDictionary(c => c.Nome, c => c);
 
@@ -468,12 +443,12 @@ namespace Proj4
                 {
                     // Busca a distância do trecho anterior (ultimoNome -> nomePasso)
                     Cidade origemTrechoParaBusca = new Cidade(ultimoNome);
-                    if (arvoreBinaria.Buscar(origemTrechoParaBusca))
+                    if (arvoreBuscaBinariaBalanceadaAVL.Buscar(origemTrechoParaBusca))
                     {
                         Ligacao buscaLig = new Ligacao(ultimoNome, nomePasso, 0);
-                        if (arvoreBinaria.Atual.Info.Ligacoes.Buscar(buscaLig))
+                        if (arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.Buscar(buscaLig))
                         {
-                            distDoAnterior = arvoreBinaria.Atual.Info.Ligacoes.Atual.Info.Distancia;
+                            distDoAnterior = arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.Atual.Info.Distancia;
                         }
                     }
                 }
@@ -502,7 +477,7 @@ namespace Proj4
             e.Graphics.DrawImage(mapa, 0, 0, pnlArvore.Width, pnlArvore.Height);
 
             List<Cidade> todasCidades = new List<Cidade>();
-            arvoreBinaria.VisitarEmOrdem(todasCidades);
+            arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(todasCidades);
 
             Dictionary<string, PointF> posicoesCidades = new Dictionary<string, PointF>();
 
@@ -526,9 +501,9 @@ namespace Proj4
                     if (string.Compare(nomeA, nomeB) < 0)
                     {
                         Cidade buscaDestino = new Cidade(ligacao.Destino);
-                        if (arvoreBinaria.Buscar(buscaDestino) && !arvoreBinaria.Atual.Info.Excluido)
+                        if (arvoreBuscaBinariaBalanceadaAVL.Buscar(buscaDestino) && !arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Excluido)
                         {
-                            PointF posDestino = MapearCoordenada(arvoreBinaria.Atual.Info.X, arvoreBinaria.Atual.Info.Y);
+                            PointF posDestino = MapearCoordenada(arvoreBuscaBinariaBalanceadaAVL.Atual.Info.X, arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Y);
                             e.Graphics.DrawLine(penLigacao, posOrigem, posDestino);
                         }
                     }
@@ -580,16 +555,18 @@ namespace Proj4
 
         private void pnlArvore_Paint(object sender, PaintEventArgs e)
         {
-            arvoreBinaria.Desenhar(pnlArvore);
+            arvoreBuscaBinariaBalanceadaAVL.Desenhar(pnlArvore);
         }
 
+
         // FECHAR
+
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             try
             {
                 // 1. Grava a Árvore de Cidades no arquivo binário (em ordem)
-                arvoreBinaria.GravarArquivoDeRegistros(arqCidades);
+                arvoreBuscaBinariaBalanceadaAVL.GravarArquivoDeRegistros(arqCidades);
 
                 // 2. Grava as Ligações de volta no arquivo de texto
                 GravarArquivoDeLigacoes(arqGrafosLigacoes);
@@ -603,7 +580,7 @@ namespace Proj4
         private void GravarArquivoDeLigacoes(string nomeArquivo)
         {
             List<Cidade> todasCidades = new List<Cidade>();
-            arvoreBinaria.VisitarEmOrdem(todasCidades);
+            arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(todasCidades);
 
             List<string> linhasParaGravar = new List<string>();
             HashSet<(string, string)> ligacoesJaGravadas = new HashSet<(string, string)>();

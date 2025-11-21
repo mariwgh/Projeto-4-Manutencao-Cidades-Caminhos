@@ -23,7 +23,6 @@ namespace Proj4
             this.Nome = "";
             this.x = 0;
             this.y = 0;
-            this.excluido = false;
         }
 
         public Cidade(string nome, double x, double y)
@@ -45,7 +44,6 @@ namespace Proj4
             set => nome = value.PadRight(tamanhoNome, ' ').Substring(0, tamanhoNome);
         }
         public int TamanhoRegistro { get => tamanhoRegistro; }
-        public bool Excluido { get; set; }
         public ListaSimples<Ligacao> Ligacoes { get => ligacoes; }
         public double X { get => x; set => x = value; }
         public double Y { get => y; set => y = value; }
@@ -61,8 +59,23 @@ namespace Proj4
         }
 
 
-        public void LerRegistro(BinaryReader arquivo, long qualRegistro) { }
-        public void GravarRegistro(BinaryWriter arquivo) { }
+        public void LerRegistro(BinaryReader arquivo, long qualRegistro) 
+        {
+            long posicaoEmBytes = qualRegistro * TamanhoRegistro;
+
+            arquivo.BaseStream.Seek(posicaoEmBytes, SeekOrigin.Begin);
+
+            nome = new string(arquivo.ReadChars(tamanhoNome));
+            x = arquivo.ReadDouble();
+            y = arquivo.ReadDouble();
+        }
+
+        public void GravarRegistro(BinaryWriter arquivo) 
+        {
+            arquivo.Write(Encoding.Default.GetBytes(nome));
+            arquivo.Write(x);
+            arquivo.Write(y);
+        }
 
     }
 }
