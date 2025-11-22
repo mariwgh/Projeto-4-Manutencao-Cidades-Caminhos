@@ -194,31 +194,29 @@ namespace Proj4
 
         private void btnAlterarCidade_Click(object sender, EventArgs e)
         {
-            if (cidadeAtual == null || cidadeAtual.Excluido) return;
+            if (arvoreBuscaBinariaBalanceadaAVL.Atual.Info != null)
+            {
+                arvoreBuscaBinariaBalanceadaAVL.Atual.Info.X = (double)udX.Value;
+                arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Y = (double)udY.Value;
+            }
 
-            cidadeAtual.X = (double)udX.Value;
-            cidadeAtual.Y = (double)udY.Value;
-
-            AtualizarControlesUI();
             pnlArvore.Refresh();
-            MessageBox.Show($"Coordenadas da cidade '{cidadeAtual.Nome}' alteradas com sucesso!");
+            MessageBox.Show($"Coordenadas da cidade '{arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Nome}' alteradas com sucesso!");
         }
 
         private void btnExcluirCidade_Click(object sender, EventArgs e)
         {
-            if (cidadeAtual == null) return;
-            if (cidadeAtual.Ligacoes.QuantosNos > 0)
+            if (arvoreBuscaBinariaBalanceadaAVL.Atual.Info != null)
             {
-                MessageBox.Show("Não é possível excluir uma cidade que possui caminhos cadastrados. Remova todos os caminhos primeiro.");
-                return;
-            }
+                if (arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.QuantosNos > 0)
+                {
+                    MessageBox.Show("Não é possível excluir uma cidade que possui caminhos cadastrados.");
+                    return;
+                }
 
-            if (MessageBox.Show($"Tem certeza que deseja excluir a cidade '{cidadeAtual.Nome}'?", "Confirmação", MessageBoxButtons.YesNo) == DialogResult.Yes)
-            {
-                cidadeAtual.Excluido = true;
-                cidadeAtual = null;
-                AtualizarControlesUI();
-                AtualizarComboBoxDestino();
+                arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Excluido = true;
+                arvoreBuscaBinariaBalanceadaAVL.Atual.Info = null;
+
                 pnlArvore.Refresh();
                 MessageBox.Show("Cidade excluída logicamente com sucesso!");
             }
@@ -562,6 +560,68 @@ namespace Proj4
             }
 
             File.WriteAllLines(nomeArquivo, linhasParaGravar);
+        }
+
+
+        // NAOSEIOQEISSO
+
+        Cidade cidadeAtual = null;
+        List<string> rotaEncontrada = new List<string>();
+
+        private void AtualizarControlesUI()
+        {
+            if (cidadeAtual != null)
+            {
+                txtNomeCidade.Text = cidadeAtual.Nome;
+                udX.Value = (decimal)cidadeAtual.X;
+                udY.Value = (decimal)cidadeAtual.Y;
+
+                dgvLigacoes.DataSource = cidadeAtual.Ligacoes.Listar();
+                dgvLigacoes.Refresh();
+
+                AtualizarComboBoxDestinoLigacao(cidadeAtual.Nome);
+
+                btnAlterarCidade.Enabled = !cidadeAtual.Excluido;
+                btnExcluirCidade.Enabled = !cidadeAtual.Excluido && cidadeAtual.Ligacoes.EstaVazia;
+                btnIncluirCaminho.Enabled = !cidadeAtual.Excluido;
+
+                //txtStatus.Text = cidadeAtual.Excluido ? "CIDADE EXCLUÍDA" : $"Caminhos: {cidadeAtual.Ligacoes.QuantosNos}";
+            }
+            else
+            {
+                txtNomeCidade.Text = "";
+                udX.Value = 0;
+                udY.Value = 0;
+                dgvLigacoes.DataSource = null;
+                //txtStatus.Text = "Nenhuma cidade selecionada";
+                btnAlterarCidade.Enabled = false;
+                btnExcluirCidade.Enabled = false;
+                btnIncluirCaminho.Enabled = false;
+            }
+        }
+        private void AtualizarComboBoxDestino()
+        {
+            List<Cidade> todasCidades = new List<Cidade>();
+            arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(todasCidades);
+
+            var nomesValidos = todasCidades
+                .Where(c => !c.Excluido)
+                .Select(c => c.Nome)
+                .ToList();
+
+            cbxCidadeDestino.DataSource = nomesValidos;
+        }
+        private void AtualizarComboBoxDestinoLigacao(string nomeOrigem)
+        {
+            List<Cidade> todasCidades = new List<Cidade>();
+            arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(todasCidades);
+
+            var destinosPossiveis = todasCidades
+                .Where(c => !c.Excluido && c.Nome != nomeOrigem)
+                .Select(c => c.Nome)
+                .ToList();
+
+            txtNovoDestino.Text = destinosPossiveis.ToString();
         }
 
     }
