@@ -245,31 +245,19 @@ namespace Proj4
 
         private void btnExcluirCaminho_Click(object sender, EventArgs e)
         {
-            if (cidadeAtual == null || dgvLigacoes.SelectedRows.Count == 0) return;
-
-            Ligacao ligacaoSelecionada = dgvLigacoes.SelectedRows[0].DataBoundItem as Ligacao;
-            if (ligacaoSelecionada == null) return;
-
-            string nomeOrigem = cidadeAtual.Nome;
-            string nomeDestino = ligacaoSelecionada.Destino.Trim();
-
-            if (MessageBox.Show($"Tem certeza que deseja excluir a ligação para '{nomeDestino}'?", "Confirmação", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            if (dgvLigacoes.SelectedRows.Count != 0)
             {
-                bool idaRemovida = TentarRemoverLigacaoUnidirecional(nomeOrigem, nomeDestino);
-                bool voltaRemovida = TentarRemoverLigacaoUnidirecional(nomeDestino, nomeOrigem);
+                Ligacao ligacaoSelecionada = dgvLigacoes.SelectedRows[0].DataBoundItem as Ligacao;
 
-                if (idaRemovida && voltaRemovida)
-                {
-                    MessageBox.Show("Ligação bidirecional removida com sucesso!");
-                }
-                else
-                {
-                    MessageBox.Show("Ocorreu um erro ao remover uma das direções da ligação.");
-                }
+                string nomeOrigem = arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Nome;
+                string nomeDestino = ligacaoSelecionada.Destino.Trim();
+                int distancia = ligacaoSelecionada.Distancia;
+
+                arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.RemoverDado(ligacaoSelecionada);
+                //remover do outro lado
+
+                pnlArvore.Refresh();
             }
-
-            AtualizarControlesUI();
-            pnlArvore.Refresh();
         }
 
         // busca de rotas (dijkstra)
