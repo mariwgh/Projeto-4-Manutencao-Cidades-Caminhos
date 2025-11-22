@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Proj4;
 
 namespace AgendaAlfabetica
 {
@@ -371,6 +372,10 @@ namespace AgendaAlfabetica
                 ultimo.Prox = null;
             }
         }
-    
+
+        internal bool Buscar(Ligacao buscaLig)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
