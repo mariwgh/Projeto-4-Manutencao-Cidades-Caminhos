@@ -156,21 +156,39 @@ namespace Proj4
 
         private void btnBuscarCidade_Click(object sender, EventArgs e)
         {
-            string nomeBusca = txtNomeCidade.Text.Trim();
-            if (string.IsNullOrEmpty(nomeBusca)) return;
+            string nome = txtNomeCidade.Text.Trim();
 
-            Cidade busca = new Cidade(nomeBusca);
-            if (arvoreBuscaBinariaBalanceadaAVL.Buscar(busca))
+            if (!(string.IsNullOrEmpty(nome)))
             {
-                cidadeAtual = arvoreBuscaBinariaBalanceadaAVL.Atual.Info;
-                AtualizarControlesUI();
-                pnlArvore.Refresh();
-            }
-            else
-            {
-                MessageBox.Show($"Cidade '{nomeBusca}' não encontrada.", "Resultado da Busca");
-                cidadeAtual = null;
-                AtualizarControlesUI();
+                Cidade busca = new Cidade(nome);
+
+                if (arvoreBuscaBinariaBalanceadaAVL.Existe(busca))
+                {
+                    udX.Value = (decimal)arvoreBuscaBinariaBalanceadaAVL.Atual.Info.X;
+                    udY.Value = (decimal)arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Y;
+
+                    dgvLigacoes.Rows.Clear();
+
+                    if (arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes != null)
+                    {
+                        foreach (Ligacao ligacao in arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.Listar())
+                        {
+                            dgvLigacoes.Rows.Add(       //add linha
+                                ligacao.Destino.Trim(), //coluna 1: nome da cidade destino
+                                ligacao.Distancia       //coluna 2: distancia
+                            );
+                        }
+                    }
+
+                    pnlArvore.Refresh();
+                }
+                else
+                {
+                    MessageBox.Show($"Cidade '{nome}' não encontrada.");
+                    udX.Value = 0;
+                    udY.Value = 0;
+                    dgvLigacoes.Rows.Clear();
+                }
             }
         }
 
