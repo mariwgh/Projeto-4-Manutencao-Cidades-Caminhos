@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AgendaAlfabetica;
 
 namespace Proj4
 {
@@ -24,20 +25,18 @@ namespace Proj4
             this.distancia = distancia;
         }
 
-
         public string Origem { get => origem; set => origem = value; }
         public string Destino { get => destino; set => destino = value; }
         public int Distancia { get => distancia; set => distancia = value; }
 
-
         public int CompareTo(Ligacao other)
         {
-            return (origem + destino).CompareTo(other.origem + other.destino);
+            return (origem + destino).ToUpper().CompareTo((other.origem + other.destino).ToUpper());
         }
+
         public override string ToString()
         {
             return $"{Destino} ({Distancia} km)";
         }
-
     }
 }
