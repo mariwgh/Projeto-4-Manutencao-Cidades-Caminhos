@@ -373,9 +373,5 @@ namespace AgendaAlfabetica
             }
         }
 
-        internal bool Buscar(Ligacao buscaLig)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

@@ -225,4 +225,9 @@ public class Arvore<Dado>
         }
     }
 
+    /*public bool Buscar(Dado dadoProcurado)
+    {
+        return false;
+    }*/
+
 }

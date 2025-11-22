@@ -21,6 +21,7 @@ namespace Proj4
 
         const string arqCidades = "cidades.dat";
         const string arqGrafosLigacoes = "GrafoOnibusSaoPaulo.txt";
+        string cidadeAtualVar = "";
         private Image mapa = Properties.Resources.SaoPaulo_MesoMicroSemMunicip;
 
 
@@ -88,6 +89,8 @@ namespace Proj4
                 Cidade cidadeOrigemParaBusca = new Cidade(nomeOrigem);
                 if (arvoreBuscaBinariaBalanceadaAVL.Existe(cidadeOrigemParaBusca))
                 {
+                    Cidade info = arvoreBuscaBinariaBalanceadaAVL.Atual.Info;
+                    cidadeAtualVar = info.ToString();
                     arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.InserirAposFim(ida);
                 }
 
@@ -236,7 +239,8 @@ namespace Proj4
                     arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.InserirAposFim(novaLigacao);
 
                     Ligacao novaLigacao2 = new Ligacao(txtNovoDestino.Text, arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Nome, (int)numericUpDown1.Value);
-                    arvoreBuscaBinariaBalanceadaAVL.Existe(novoDestino).Atual.Info.Ligacoes.InserirAposFim(novaLigacao2);
+                    arvoreBuscaBinariaBalanceadaAVL.Existe(novoDestino);
+                    arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.InserirAposFim(novaLigacao2);       //?????
                 }
             }
 
@@ -245,19 +249,31 @@ namespace Proj4
 
         private void btnExcluirCaminho_Click(object sender, EventArgs e)
         {
-            if (dgvLigacoes.SelectedRows.Count != 0)
+            if (cidadeAtual == null || dgvLigacoes.SelectedRows.Count == 0) return;
+
+            Ligacao ligacaoSelecionada = dgvLigacoes.SelectedRows[0].DataBoundItem as Ligacao;
+            if (ligacaoSelecionada == null) return;
+
+            string nomeOrigem = cidadeAtual.Nome;
+            string nomeDestino = ligacaoSelecionada.Destino.Trim();
+
+            if (MessageBox.Show($"Tem certeza que deseja excluir a ligação para '{nomeDestino}'?", "Confirmação", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
-                Ligacao ligacaoSelecionada = dgvLigacoes.SelectedRows[0].DataBoundItem as Ligacao;
+                bool idaRemovida = TentarRemoverLigacaoUnidirecional(nomeOrigem, nomeDestino);
+                bool voltaRemovida = TentarRemoverLigacaoUnidirecional(nomeDestino, nomeOrigem);
 
-                string nomeOrigem = arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Nome;
-                string nomeDestino = ligacaoSelecionada.Destino.Trim();
-                int distancia = ligacaoSelecionada.Distancia;
-
-                arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.RemoverDado(ligacaoSelecionada);
-                //remover do outro lado
-
-                pnlArvore.Refresh();
+                if (idaRemovida && voltaRemovida)
+                {
+                    MessageBox.Show("Ligação bidirecional removida com sucesso!");
+                }
+                else
+                {
+                    MessageBox.Show("Ocorreu um erro ao remover uma das direções da ligação.");
+                }
             }
+
+            AtualizarControlesUI();
+            pnlArvore.Refresh();
         }
 
         // busca de rotas (dijkstra)
@@ -336,7 +352,7 @@ namespace Proj4
             dgvRotas.Rows.Clear();
             lbDistanciaTotal.Text = "Distância Total: N/A";
 
-            if (cidadeAtual == null || cidadeAtual.Excluido || cbxCidadeDestino.SelectedItem == null) return;
+            if (cidadeAtual == null || cidadeAtual.Excluido ||cbxCidadeDestino.SelectedItem == null) return;
 
             string nomeOrigem = cidadeAtual.Nome;
             string nomeDestino = cbxCidadeDestino.SelectedItem.ToString();
