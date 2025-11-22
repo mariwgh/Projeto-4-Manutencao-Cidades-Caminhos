@@ -102,6 +102,7 @@ namespace Proj4
 
         // EVENTOS CLICK
 
+        //cidade
         //verificar (evento Leave do textBox) se a cidade não existe
         private void txtNomeCidade_Leave(object sender, EventArgs e)
         {
@@ -222,30 +223,23 @@ namespace Proj4
             }
         }
 
-
+        //caminhos
         private void btnIncluirCaminho_Click(object sender, EventArgs e)
         {
-            if (cidadeAtual == null || cidadeAtual.Excluido || txtNovoDestino.SelectedItem == null) return;
-
-            string nomeOrigem = cidadeAtual.Nome;
-            string nomeDestino = txtNovoDestino.SelectedItem.ToString();
-            int distancia = (int)udDistancia.Value;
-
-            if (distancia <= 0) return;
-
-            bool idaAdicionada = TentarAdicionarLigacaoUnidirecional(nomeOrigem, nomeDestino, distancia);
-            bool voltaAdicionada = TentarAdicionarLigacaoUnidirecional(nomeDestino, nomeOrigem, distancia);
-
-            if (idaAdicionada && voltaAdicionada)
+            if (arvoreBuscaBinariaBalanceadaAVL.Atual.Info != null && txtNovoDestino != null)
             {
-                MessageBox.Show("Ligação bidirecional adicionada com sucesso!");
-            }
-            else if (!idaAdicionada && !voltaAdicionada)
-            {
-                MessageBox.Show("A ligação já existe.");
+                Cidade novoDestino = new Cidade(txtNovoDestino.Text);
+
+                if (arvoreBuscaBinariaBalanceadaAVL.Existe(novoDestino))
+                {
+                    Ligacao novaLigacao = new Ligacao(arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Nome, txtNovoDestino.Text, (int)numericUpDown1.Value);
+                    arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.InserirAposFim(novaLigacao);
+
+                    Ligacao novaLigacao2 = new Ligacao(txtNovoDestino.Text, arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Nome, (int)numericUpDown1.Value);
+                    arvoreBuscaBinariaBalanceadaAVL.Existe(novoDestino).Atual.Info.Ligacoes.InserirAposFim(novaLigacao2);
+                }
             }
 
-            AtualizarControlesUI();
             pnlArvore.Refresh();
         }
 
