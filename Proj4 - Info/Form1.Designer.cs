@@ -383,7 +383,7 @@
             this.txtNomeCidade.Name = "txtNomeCidade";
             this.txtNomeCidade.Size = new System.Drawing.Size(216, 28);
             this.txtNomeCidade.TabIndex = 2;
-            this.txtNomeCidade.Leave += new System.EventHandler(this.txtNomeCidade_Leave);
+            
             // 
             // label1
             // 
