@@ -72,9 +72,14 @@ namespace Proj4
 
         public void GravarRegistro(BinaryWriter arquivo) 
         {
-            arquivo.Write(Encoding.Default.GetBytes(nome));
+            arquivo.Write(nome.ToCharArray());
             arquivo.Write(x);
             arquivo.Write(y);
+        }
+
+        public bool AdicionarLigacao(Ligacao novaLigacao)
+        {
+            return ligacoes.InserirEmOrdem(novaLigacao);
         }
 
     }
