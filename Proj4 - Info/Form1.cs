@@ -45,9 +45,9 @@ namespace Proj4
 
         private void LerArquivoDeCidades()
         {
-            if (!File.Exists("Cidades.dat")) return;
-            //TENTAR FAZER SEM ESSE USING
-            using (FileStream arq = new FileStream("Cidades.dat", FileMode.Open))
+            if (!File.Exists("Cidades Sao Paulo.dat")) return;
+
+            using (FileStream arq = new FileStream("Cidades Sao Paulo.dat", FileMode.Open))
             using (BinaryReader leitor = new BinaryReader(arq))
             {
                 while (leitor.BaseStream.Position < leitor.BaseStream.Length)
@@ -59,15 +59,14 @@ namespace Proj4
             }
         }
 
-        //NÃO SEI SE TA CERTO
         private void LerArquivoDeCaminhos()
         {
             if (!File.Exists("GrafoOnibusSaoPaulo.txt")) return;
 
             string[] linhas = File.ReadAllLines("GrafoOnibusSaoPaulo.txt");
-            foreach (string linha in linhas)
+            foreach (var linha in linhas)
             {
-                string[] dados = linha.Split(';');
+                var dados = linha.Split(';');
                 if (dados.Length >= 3)
                 {
                     string nomeOrig = dados[0].Trim();
@@ -88,10 +87,9 @@ namespace Proj4
             }
         }
 
-        //acho que tá faltando coisa aqui mano
         private void GravarDados()
         {
-            using (FileStream fs = new FileStream("Cidades.dat", FileMode.Create))
+            using (FileStream fs = new FileStream("Cidades Sao Paulo.dat", FileMode.Create))
             using (BinaryWriter bw = new BinaryWriter(fs))
             using (StreamWriter sw = new StreamWriter("GrafoOnibusSaoPaulo.txt"))
             {
@@ -99,13 +97,13 @@ namespace Proj4
                 List<Cidade> lista = new List<Cidade>();
                 arvore.VisitarEmOrdem(lista);
 
-                foreach (Cidade cidade in lista)
+                foreach (var cidade in lista)
                 {
                     // 1. Grava Cidade (Binário)
                     cidade.GravarRegistro(bw);
 
                     // 2. Grava Caminhos (Texto)
-                    NoLista<Ligacao> no = cidade.Ligacoes.Primeiro; // Propriedade da ListaSimples
+                    var no = cidade.Ligacoes.Primeiro; // Propriedade da ListaSimples
                     while (no != null)
                     {
                         Ligacao lig = no.Info;
@@ -150,7 +148,6 @@ namespace Proj4
         }
 
         // --- BOTÃO EXCLUIR CAMINHO ---
-        //me parece certo
         private void btnExcluirCaminho_Click(object sender, EventArgs e)
         {
             if (dgvLigacoes.SelectedRows.Count == 0 || string.IsNullOrEmpty(txtNomeCidade.Text))
@@ -161,7 +158,8 @@ namespace Proj4
 
             try
             {
-                string nomeOrig = txtNomeCidade.Text; 
+                string nomeOrig = txtNomeCidade.Text;
+                // Ajuste os índices das células (0 e 1) conforme a ordem das colunas do seu Grid
                 string nomeDest = dgvLigacoes.SelectedRows[0].Cells[0].Value.ToString();
                 int dist = int.Parse(dgvLigacoes.SelectedRows[0].Cells[1].Value.ToString());
 
@@ -185,7 +183,6 @@ namespace Proj4
         }
 
         // Método auxiliar para remover da ListaSimples sem mexer na classe dela
-        //mano, me parece certo
         private void ReconstruirListaSemOItem(ListaSimples<Ligacao> lista, Ligacao itemRemover)
         {
             if (lista.EstaVazia) return;
@@ -202,16 +199,16 @@ namespace Proj4
             }
 
             // 2. Esvazia a lista usando Reflection (para não violar regras de acesso)
-            BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
+            var flags = BindingFlags.NonPublic | BindingFlags.Instance;
             typeof(ListaSimples<Ligacao>).GetField("primeiro", flags)?.SetValue(lista, null);
             typeof(ListaSimples<Ligacao>).GetField("ultimo", flags)?.SetValue(lista, null);
             typeof(ListaSimples<Ligacao>).GetField("quantosNos", flags)?.SetValue(lista, 0);
 
             // 3. Reinsere
-            foreach (Ligacao lig in temp) lista.InserirAposFim(lig);
+            foreach (var lig in temp) lista.InserirAposFim(lig);
         }
 
-        // --- BOTÃO BUSCAR (DIJKSTRA) --->???????????????????
+        // --- BOTÃO BUSCAR (DIJKSTRA) ---
         private void btnBuscarCaminho_Click(object sender, EventArgs e)
         {
             if (cbxCidadeDestino.SelectedItem == null) return;
