@@ -47,6 +47,7 @@ namespace Proj4
         public ListaSimples<Ligacao> Ligacoes { get => ligacoes; }
         public double X { get => x; set => x = value; }
         public double Y { get => y; set => y = value; }
+        public bool Excluido { get; internal set; }
 
 
         public override string ToString()
@@ -75,6 +76,12 @@ namespace Proj4
             arquivo.Write(Encoding.Default.GetBytes(nome));
             arquivo.Write(x);
             arquivo.Write(y);
+        }
+
+
+        public void AdicionarLigacaoDaCidade(Ligacao novaLigacao)
+        {
+            ligacoes.InserirAposFim(novaLigacao);
         }
 
     }

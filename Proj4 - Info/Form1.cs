@@ -23,6 +23,7 @@ namespace Proj4
         const string arqGrafosLigacoes = "GrafoOnibusSaoPaulo.txt";
         private Image mapa = Properties.Resources.SaoPaulo_MesoMicroSemMunicip;
 
+        Cidade cidadeAtual = null;
 
         public Form1()
         {
@@ -88,6 +89,7 @@ namespace Proj4
                 Cidade cidadeOrigemParaBusca = new Cidade(nomeOrigem);
                 if (arvoreBuscaBinariaBalanceadaAVL.Existe(cidadeOrigemParaBusca))
                 {
+                    cidadeAtual = arvoreBuscaBinariaBalanceadaAVL.Atual.Info;
                     arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.InserirAposFim(ida);
                 }
 
@@ -236,7 +238,8 @@ namespace Proj4
                     arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.InserirAposFim(novaLigacao);
 
                     Ligacao novaLigacao2 = new Ligacao(txtNovoDestino.Text, arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Nome, (int)numericUpDown1.Value);
-                    arvoreBuscaBinariaBalanceadaAVL.Existe(novoDestino).Atual.Info.Ligacoes.InserirAposFim(novaLigacao2);
+                    arvoreBuscaBinariaBalanceadaAVL.Existe(novoDestino);
+                    arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.InserirAposFim(novaLigacao2);
                 }
             }
 
@@ -245,16 +248,32 @@ namespace Proj4
 
         private void btnExcluirCaminho_Click(object sender, EventArgs e)
         {
-            if (dgvLigacoes.SelectedRows.Count != 0)
+            if (cidadeAtual != null || dgvLigacoes.SelectedRows.Count != 0)
             {
                 Ligacao ligacaoSelecionada = dgvLigacoes.SelectedRows[0].DataBoundItem as Ligacao;
 
-                string nomeOrigem = arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Nome;
-                string nomeDestino = ligacaoSelecionada.Destino.Trim();
-                int distancia = ligacaoSelecionada.Distancia;
+                if (ligacaoSelecionada != null)
+                {
+                    string nomeOrigem = cidadeAtual.Nome;
+                    //string nomeOrigem = txtNomeCidade.Text;
+                    string nomeDestino = ligacaoSelecionada.Destino.Trim();
+                    //string nomeDestino = dgvLigacoes.SelectedRows[0].Cells[0].Value.ToString();
+                    int distancia = ligacaoSelecionada.Distancia;
+                    //int distancia = int.Parse(dgvLigacoes.SelectedRows[0].Cells[1].Value.ToString());
 
-                arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.RemoverDado(ligacaoSelecionada);
-                //remover do outro lado
+                    if (nomeOrigem != null && nomeDestino != null)
+                    {
+                        Ligacao ida = new Ligacao(nomeOrigem, nomeDestino, distancia);
+                        Ligacao volta = new Ligacao(nomeDestino, nomeOrigem, distancia);
+
+                        //Cidade origem = BuscarCidadeNaArvore(nomeOrig);
+                        //Cidade destino = BuscarCidadeNaArvore(nomeDest);
+
+                        cidadeAtual.Ligacoes.RemoverDado(ligacaoSelecionada);
+
+                        //remover do outro lado
+                    }
+                }
 
                 pnlArvore.Refresh();
             }
@@ -377,10 +396,10 @@ namespace Proj4
                 {
                     // Busca a distância do trecho anterior (ultimoNome -> nomePasso)
                     Cidade origemTrechoParaBusca = new Cidade(ultimoNome);
-                    if (arvoreBuscaBinariaBalanceadaAVL.Buscar(origemTrechoParaBusca))
+                    if (arvoreBuscaBinariaBalanceadaAVL.Existe(origemTrechoParaBusca))
                     {
                         Ligacao buscaLig = new Ligacao(ultimoNome, nomePasso, 0);
-                        if (arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.Buscar(buscaLig))
+                        if (arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.ExisteDado(buscaLig))
                         {
                             distDoAnterior = arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.Atual.Info.Distancia;
                         }
@@ -435,7 +454,7 @@ namespace Proj4
                     if (string.Compare(nomeA, nomeB) < 0)
                     {
                         Cidade buscaDestino = new Cidade(ligacao.Destino);
-                        if (arvoreBuscaBinariaBalanceadaAVL.Buscar(buscaDestino) && !arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Excluido)
+                        if (arvoreBuscaBinariaBalanceadaAVL.Existe(buscaDestino) && !arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Excluido)
                         {
                             PointF posDestino = MapearCoordenada(arvoreBuscaBinariaBalanceadaAVL.Atual.Info.X, arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Y);
                             e.Graphics.DrawLine(penLigacao, posOrigem, posDestino);
@@ -497,6 +516,8 @@ namespace Proj4
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            //GravarDados();
+
             try
             {
                 // 1. Grava a Árvore de Cidades no arquivo binário (em ordem)
@@ -547,7 +568,6 @@ namespace Proj4
 
         // NAOSEIOQEISSO
 
-        Cidade cidadeAtual = null;
         List<string> rotaEncontrada = new List<string>();
 
         private void AtualizarControlesUI()
@@ -605,6 +625,57 @@ namespace Proj4
 
             txtNovoDestino.Text = destinosPossiveis.ToString();
         }
+        private void AtualizarCombos()
+        {
+            //cbxCidadeOrigem.Items.Clear();
+            cbxCidadeDestino.Items.Clear();
+            List<Cidade> lista = new List<Cidade>();
+            arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(lista);
 
+            foreach (var c in lista)
+            {
+                //cbxCidadeOrigem.Items.Add(c.Nome.Trim());
+                cbxCidadeDestino.Items.Add(c.Nome.Trim());
+            }
+        }
+
+        private void GravarDados()
+        {
+            using (FileStream fs = new FileStream("Cidades Sao Paulo.dat", FileMode.Create))
+            using (BinaryWriter bw = new BinaryWriter(fs))
+            using (StreamWriter sw = new StreamWriter("GrafoOnibusSaoPaulo.txt"))
+            {
+                // Usa o VisitarEmOrdem da própria árvore
+                List<Cidade> lista = new List<Cidade>();
+                arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(lista); foreach (var cidade in lista)
+                {
+                    // 1. Grava Cidade (Binário)
+                    cidade.GravarRegistro(bw);
+
+                    // 2. Grava Caminhos (Texto)
+                    var no = cidade.Ligacoes.Primeiro; // Propriedade da ListaSimples
+                    while (no != null)
+                    {
+                        Ligacao lig = no.Info;
+                        sw.WriteLine($"{cidade.Nome.Trim()};{lig.Destino.Trim()};{lig.Distancia}");
+                        no = no.Prox;
+                    }
+                }
+            }
+        }
+
+        private Cidade BuscarCidadeNaArvore(string nome)
+        {
+            NoArvore<Cidade> atual = arvoreBuscaBinariaBalanceadaAVL.Raiz;
+            Cidade chave = new Cidade(nome);
+            while (atual != null)
+            {
+                int comp = chave.CompareTo(atual.Info);
+                if (comp == 0) return atual.Info;
+                if (comp < 0) atual = atual.Esq;
+                else atual = atual.Dir;
+            }
+            return null;
+        }
     }
 }

@@ -32,7 +32,7 @@ namespace Proj4
 
         public int CompareTo(Ligacao other)
         {
-            return (origem + destino).CompareTo(other.origem + other.destino);
+            return (origem + destino).ToUpper().CompareTo((other.origem + other.destino).ToUpper());
         }
         public override string ToString()
         {
