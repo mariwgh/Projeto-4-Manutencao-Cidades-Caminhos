@@ -159,6 +159,11 @@ namespace Proj4
 
         private void btnBuscarCidade_Click(object sender, EventArgs e)
         {
+            //visitar em ordem de arvore 
+            // no = no.prox
+
+            //nao entendi oq foi feito aq, voltar dps
+
             string nome = txtNomeCidade.Text.Trim();
 
             if (!(string.IsNullOrEmpty(nome)))
@@ -279,7 +284,7 @@ namespace Proj4
             }
         }
 
-        // busca de rotas (dijkstra)
+        // busca de rotas (dijkstra) - ta na ap
 
         private Dictionary<string, (int distancia, string anterior)> Dijkstra(string nomeInicio)
         {
@@ -647,13 +652,14 @@ namespace Proj4
             {
                 // Usa o VisitarEmOrdem da própria árvore
                 List<Cidade> lista = new List<Cidade>();
-                arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(lista); foreach (var cidade in lista)
+                arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(lista); 
+                foreach (Cidade cidade in lista)
                 {
                     // 1. Grava Cidade (Binário)
                     cidade.GravarRegistro(bw);
 
                     // 2. Grava Caminhos (Texto)
-                    var no = cidade.Ligacoes.Primeiro; // Propriedade da ListaSimples
+                    NoLista<Ligacao> no = cidade.Ligacoes.Primeiro; // Propriedade da ListaSimples
                     while (no != null)
                     {
                         Ligacao lig = no.Info;
