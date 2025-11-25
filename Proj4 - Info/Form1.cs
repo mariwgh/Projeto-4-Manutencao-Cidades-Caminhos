@@ -8,7 +8,6 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Windows.Forms;
 
 namespace Proj4
@@ -250,80 +249,31 @@ namespace Proj4
 
         private void btnExcluirCaminho_Click(object sender, EventArgs e)
         {
-            if (dgvLigacoes.SelectedRows.Count == 0)
+            if (cidadeAtual == null || dgvLigacoes.SelectedRows.Count == 0) return;
+
+            Ligacao ligacaoSelecionada = dgvLigacoes.SelectedRows[0].DataBoundItem as Ligacao;
+            if (ligacaoSelecionada == null) return;
+
+            string nomeOrigem = cidadeAtual.Nome;
+            string nomeDestino = ligacaoSelecionada.Destino.Trim();
+
+            if (MessageBox.Show($"Tem certeza que deseja excluir a ligação para '{nomeDestino}'?", "Confirmação", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
-                MessageBox.Show("Selecione um caminho na tabela para excluir.");
-                return;
-            }
+                bool idaRemovida = TentarRemoverLigacaoUnidirecional(nomeOrigem, nomeDestino);
+                bool voltaRemovida = TentarRemoverLigacaoUnidirecional(nomeDestino, nomeOrigem);
 
-            // Tenta pegar a origem da caixa de texto ou do combo (ajuste conforme seu form)
-            string nomeOrigem = txtNomeCidade.Text;
-            if (string.IsNullOrEmpty(nomeOrigem)) return;
-
-            try
-            {
-                // Pega dados do grid (assumindo col 0 = Destino, col 1 = Distancia)
-                string nomeDestino = dgvLigacoes.SelectedRows[0].Cells[0].Value.ToString();
-                int distancia = int.Parse(dgvLigacoes.SelectedRows[0].Cells[1].Value.ToString());
-
-                // Busca as cidades reais na árvore
-                Cidade cOrigem = arvoreBuscaBinariaBalanceadaAVL.Buscar(new Cidade(nomeOrigem));
-                Cidade cDestino = arvoreBuscaBinariaBalanceadaAVL.Buscar(new Cidade(nomeDestino));
-
-                if (cOrigem != null && cDestino != null)
+                if (idaRemovida && voltaRemovida)
                 {
-                    // Cria objetos dummy para comparação
-                    Ligacao ida = new Ligacao(nomeOrigem, nomeDestino, distancia);
-                    Ligacao volta = new Ligacao(nomeDestino, nomeOrigem, distancia);
-
-                    // Remove IDA e VOLTA usando o método auxiliar
-                    ReconstruirListaSemOItem(cOrigem.Ligacoes, ida);
-                    ReconstruirListaSemOItem(cDestino.Ligacoes, volta);
-
-                    MessageBox.Show("Caminho excluído com sucesso!");
-
-                    // Atualiza o Grid da cidade atual para sumir a linha excluída
-                    // (Chame aqui o seu método que preenche o grid, ex: btnBuscarCidade_Click ou similar)
-                    pnlArvore.Invalidate(); // Força redesenho do mapa
+                    MessageBox.Show("Ligação bidirecional removida com sucesso!");
+                }
+                else
+                {
+                    MessageBox.Show("Ocorreu um erro ao remover uma das direções da ligação.");
                 }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Erro ao excluir: " + ex.Message);
-            }
-        }
 
-        // Método auxiliar para remover item sem ter o método Remover na ListaSimples
-        private void ReconstruirListaSemOItem(ListaSimples<Ligacao> lista, Ligacao itemParaRemover)
-        {
-            if (lista.EstaVazia) return;
-
-            // 1. Salva itens que NÃO serão excluídos
-            List<Ligacao> temp = new List<Ligacao>();
-
-            // Acessamos 'Primeiro' diretamente para percorrer com segurança
-            var noAtual = lista.Primeiro;
-            while (noAtual != null)
-            {
-                if (noAtual.Info.CompareTo(itemParaRemover) != 0)
-                {
-                    temp.Add(noAtual.Info);
-                }
-                noAtual = noAtual.Prox;
-            }
-
-            // 2. Zera a lista original usando Reflection (já que não podemos mexer na classe)
-            // Isso acessa os campos privados 'primeiro', 'ultimo' e 'quantosNos'
-            var flags = BindingFlags.NonPublic | BindingFlags.Instance;
-            typeof(ListaSimples<Ligacao>).GetField("primeiro", flags)?.SetValue(lista, null);
-            typeof(ListaSimples<Ligacao>).GetField("ultimo", flags)?.SetValue(lista, null);
-            typeof(ListaSimples<Ligacao>).GetField("quantosNos", flags)?.SetValue(lista, 0);
-
-            // 3. Reinsere os itens salvos
-            foreach (var lig in temp)
-            {
-                lista.InserirAposFim(lig);
-            }
+            AtualizarControlesUI();
+            pnlArvore.Refresh();
         }
 
         // busca de rotas (dijkstra)
@@ -443,10 +393,10 @@ namespace Proj4
                 {
                     // Busca a distância do trecho anterior (ultimoNome -> nomePasso)
                     Cidade origemTrechoParaBusca = new Cidade(ultimoNome);
-                    if (arvoreBuscaBinariaBalanceadaAVL.Existe(origemTrechoParaBusca))
+                    if (arvoreBuscaBinariaBalanceadaAVL.Buscar(origemTrechoParaBusca))
                     {
                         Ligacao buscaLig = new Ligacao(ultimoNome, nomePasso, 0);
-                        if (arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.ExisteDado(buscaLig))
+                        if (arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.Buscar(buscaLig))
                         {
                             distDoAnterior = arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Ligacoes.Atual.Info.Distancia;
                         }
@@ -501,7 +451,7 @@ namespace Proj4
                     if (string.Compare(nomeA, nomeB) < 0)
                     {
                         Cidade buscaDestino = new Cidade(ligacao.Destino);
-                        if (arvoreBuscaBinariaBalanceadaAVL.Existe(buscaDestino) && !arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Excluido)
+                        if (arvoreBuscaBinariaBalanceadaAVL.Buscar(buscaDestino) && !arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Excluido)
                         {
                             PointF posDestino = MapearCoordenada(arvoreBuscaBinariaBalanceadaAVL.Atual.Info.X, arvoreBuscaBinariaBalanceadaAVL.Atual.Info.Y);
                             e.Graphics.DrawLine(penLigacao, posOrigem, posDestino);
