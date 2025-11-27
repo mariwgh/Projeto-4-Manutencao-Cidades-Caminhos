@@ -71,17 +71,20 @@ namespace Proj4
             y = arquivo.ReadDouble();
         }
 
-        // Na classe Cidade.cs
         public void GravarRegistro(BinaryWriter arquivo)
         {
-            // Garante que o nome tenha 25 caracteres antes de gravar
             string nomeGravacao = "";
-            if (this.Nome != null)
-                nomeGravacao = this.Nome.PadRight(25, ' ').Substring(0, 25);
-            else
-                nomeGravacao = new string(' ', 25);
 
-            arquivo.Write(nomeGravacao.ToCharArray()); // Grava chars fixos
+            if (this.Nome != null)
+            {
+                nomeGravacao = this.Nome.PadRight(25, ' ').Substring(0, 25);
+            }
+            else
+            {
+                nomeGravacao = new string(' ', 25);
+            }
+
+            arquivo.Write(nomeGravacao.ToCharArray());
             arquivo.Write(x);
             arquivo.Write(y);
         }
