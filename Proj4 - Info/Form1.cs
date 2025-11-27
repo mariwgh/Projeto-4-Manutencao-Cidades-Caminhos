@@ -48,24 +48,6 @@ namespace Proj4
             }
         }
 
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            try
-            {
-                // grava cidades e ligações usando nosso próprio método
-                GravarDados();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"Erro ao salvar os dados: {ex.Message}\n" +
-                    "O programa será encerrado sem salvar as últimas alterações.",
-                    "Erro de Salvamento",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
-            }
-        }
 
         // ================== ARQUIVOS ==================
 
@@ -132,33 +114,42 @@ namespace Proj4
         /// Grava cidades em binário (cidades.dat) e ligações em texto (GrafoOnibusSaoPaulo.txt)
         /// Usando o padrão de Cidade.GravarRegistro e ListaSimples.
         /// </summary>
+        /// 
+
         private void GravarDados()
         {
+
             List<Cidade> lista = new List<Cidade>();
             arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(lista);
-
-            // Grava cidades
             using (FileStream fs = new FileStream(arqCidades, FileMode.Create))
             using (BinaryWriter bw = new BinaryWriter(fs))
             {
                 foreach (Cidade cidade in lista)
                 {
-                    // grava todos os registros, inclusive possíveis excluídos
-                    // (o campo Excluido não faz parte do arquivo)
-                    cidade.GravarRegistro(bw);
+                    if (!cidade.Excluido)
+                    {
+                        cidade.GravarRegistro(bw);
+                    }
                 }
             }
-
-            // Grava ligações (texto)
             using (StreamWriter sw = new StreamWriter(arqGrafosLigacoes))
             {
-                foreach (Cidade cidade in lista.Where(c => !c.Excluido))
+                foreach (Cidade cidade in lista)
                 {
+                    if (cidade.Excluido) continue;
                     cidade.Ligacoes.IniciarPercursoSequencial();
                     while (cidade.Ligacoes.PodePercorrer())
                     {
                         Ligacao lig = cidade.Ligacoes.Atual.Info;
-                        sw.WriteLine($"{cidade.Nome.Trim()};{lig.Destino.Trim()};{lig.Distancia}");
+                        string origem = cidade.Nome.Trim();
+                        string destino = lig.Destino.Trim();
+
+                        // só grava a ligação se origem < destino, para não duplicar ida/volta
+                        if (string.Compare(origem, destino, StringComparison.Ordinal) < 0)
+                        {
+                            sw.WriteLine($"{origem};{destino};{lig.Distancia}");
+                        }
+
                     }
                 }
             }
@@ -257,24 +248,6 @@ namespace Proj4
             pnlArvore.Refresh();
         }
 
-        private void btnAlterarCidade_Click(object sender, EventArgs e)
-        {
-            if (cidadeAtual == null || cidadeAtual.Excluido)
-            {
-                MessageBox.Show("Nenhuma cidade válida selecionada.");
-                return;
-            }
-
-            // Atualiza as coordenadas
-            cidadeAtual.X = (double)udX.Value;
-            cidadeAtual.Y = (double)udY.Value;
-
-            pbMapa.Invalidate();
-            pnlArvore.Refresh();
-
-            MessageBox.Show($"Coordenadas da cidade '{cidadeAtual.Nome}' alteradas com sucesso!");
-        }
-
         private void btnExcluirCidade_Click(object sender, EventArgs e)
         {
             if (cidadeAtual == null)
@@ -367,32 +340,51 @@ namespace Proj4
 
         private void btnExcluirCaminho_Click(object sender, EventArgs e)
         {
-            if (cidadeAtual == null)
-                return;
-
-            var linha = dgvLigacoes.CurrentRow;
-            if (linha == null)
-                return;
-
-            string nomeDestino = linha.Cells[0].Value.ToString().Trim();
-            int distancia = Convert.ToInt32(linha.Cells[1].Value);
-
-            // remove na origem
-            Ligacao ligIda = new Ligacao(cidadeAtual.Nome, nomeDestino, distancia);
-            cidadeAtual.Ligacoes.RemoverDado(ligIda);
-
-            // remove na cidade de destino
-            Cidade destinoChave = new Cidade(nomeDestino);
-            if (arvoreBuscaBinariaBalanceadaAVL.Existe(destinoChave))
+            // Validações
+            if (cidadeAtual == null) return;
+            if (dgvLigacoes.CurrentRow == null)
             {
-                Cidade destino = arvoreBuscaBinariaBalanceadaAVL.Atual.Info;
-                Ligacao ligVolta = new Ligacao(nomeDestino, cidadeAtual.Nome, distancia);
-                destino.Ligacoes.RemoverDado(ligVolta);
+                MessageBox.Show("Selecione a linha da estrada para excluir.");
+                return;
             }
 
-            AtualizarGridLigacoesCidadeAtual();
-            pbMapa.Invalidate();
-            pnlArvore.Refresh();
+            try
+            {
+                // Pega dados do Grid
+                string nomeDestino = dgvLigacoes.CurrentRow.Cells[0].Value.ToString().Trim();
+                int distancia = Convert.ToInt32(dgvLigacoes.CurrentRow.Cells[1].Value);
+
+                // CORREÇÃO PRINCIPAL: Usar Trim() na origem também!
+                // A Cidade.Nome tem 25 chars (com espaços), mas a Ligacao guarda sem espaços.
+                string nomeOrigem = cidadeAtual.Nome.Trim();
+
+                // 1. Remove da Origem (IDA)
+                Ligacao ligIda = new Ligacao(nomeOrigem, nomeDestino, distancia);
+                RemoverLigacaoDaLista(cidadeAtual.Ligacoes, ligIda);
+
+                // 2. Remove do Destino (VOLTA)
+                Cidade destinoChave = new Cidade(nomeDestino);
+                if (arvoreBuscaBinariaBalanceadaAVL.Existe(destinoChave))
+                {
+                    Cidade destino = arvoreBuscaBinariaBalanceadaAVL.Atual.Info;
+
+                    // Note que aqui invertemos origem/destino para apagar a volta
+                    Ligacao ligVolta = new Ligacao(nomeDestino, nomeOrigem, distancia);
+
+                    RemoverLigacaoDaLista(destino.Ligacoes, ligVolta);
+                }
+
+                // 3. Atualiza a tela
+                AtualizarGridLigacoesCidadeAtual();
+                pbMapa.Invalidate();
+                pnlArvore.Refresh();
+
+                MessageBox.Show("Caminho excluído com sucesso!");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Erro ao excluir: " + ex.Message);
+            }
         }
 
         // ================== COMBOS / BUSCAS AUXILIARES ==================
@@ -521,39 +513,275 @@ namespace Proj4
             arvoreBuscaBinariaBalanceadaAVL.Desenhar(pnlArvore);
         }
 
-        // ================== BUSCAR CAMINHO (DEPOIS VOCÊ PLUGA O GRAFO AQUI) ==================
+        private void btnAlterarCidade_Click(object sender, EventArgs e)
+        {
+            // 1. Verifica se existe uma cidade selecionada para alterar
+            if (cidadeAtual == null)
+            {
+                MessageBox.Show("Nenhuma cidade selecionada para alteração. Busque uma cidade primeiro.");
+                return;
+            }
+
+            if (cidadeAtual.Excluido)
+            {
+                MessageBox.Show("Não é possível alterar uma cidade excluída.");
+                return;
+            }
+
+            try
+            {
+                // 2. Pega os valores que você digitou/selecionou nos campos numéricos
+                double novoX = (double)udX.Value;
+                double novoY = (double)udY.Value;
+
+                // 3. Atualiza as propriedades do objeto cidadeAtual (que é uma referência ao nó da árvore)
+                cidadeAtual.X = novoX;
+                cidadeAtual.Y = novoY;
+
+                // 4. Força o redesenho do mapa (isso chama o pbMapa_Paint automaticamente)
+                pbMapa.Invalidate();
+
+                // 5. Opcional: Atualiza a visualização da árvore também, caso ela mostre coordenadas
+                pnlArvore.Refresh();
+
+                MessageBox.Show($"Coordenadas da cidade '{cidadeAtual.Nome.Trim()}' alteradas com sucesso!");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Erro ao alterar coordenadas: " + ex.Message);
+            }
+        }
+
+        // Método auxiliar para remover um item da ListaSimples "na marra"
+        private void RemoverLigacaoDaLista(ListaSimples<Ligacao> lista, Ligacao itemParaRemover)
+        {
+            if (lista.EstaVazia) return;
+
+            // 1. Cria uma lista temporária do C# para salvar o que NÃO será excluído
+            List<Ligacao> itensParaManter = new List<Ligacao>();
+
+            // 2. Percorre a lista original
+            lista.IniciarPercursoSequencial();
+            while (lista.PodePercorrer())
+            {
+                Ligacao itemAtual = lista.Atual.Info;
+
+                // Se o item atual for DIFERENTE do que queremos remover, guardamos ele
+                if (itemAtual.CompareTo(itemParaRemover) != 0)
+                {
+                    itensParaManter.Add(itemAtual);
+                }
+            }
+
+            // 3. Zera a lista original (Resetando os ponteiros privados via Reflection)
+            // Isso é necessário pois a ListaSimples geralmente não tem um método .Clear() público exposto
+            var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+
+            // Zera o Primeiro, Ultimo, Atual, Anterior e o contador
+            typeof(ListaSimples<Ligacao>).GetField("primeiro", flags)?.SetValue(lista, null);
+            typeof(ListaSimples<Ligacao>).GetField("ultimo", flags)?.SetValue(lista, null);
+            typeof(ListaSimples<Ligacao>).GetField("quantosNos", flags)?.SetValue(lista, 0);
+            typeof(ListaSimples<Ligacao>).GetField("atual", flags)?.SetValue(lista, null);
+            typeof(ListaSimples<Ligacao>).GetField("anterior", flags)?.SetValue(lista, null);
+
+            // 4. Reinsere os itens que salvamos
+            foreach (var item in itensParaManter)
+            {
+                lista.InserirAposFim(item);
+            }
+        }
+
+        private void Form1_FormClosing_1(object sender, FormClosingEventArgs e)
+        {
+            try
+            {
+                // grava cidades e ligações usando nosso próprio método
+                GravarDados();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Erro ao salvar os dados: {ex.Message}\n" +
+                    "O programa será encerrado sem salvar as últimas alterações.",
+                    "Erro de Salvamento",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+            }
+        }
 
         private void btnBuscarCaminho_Click(object sender, EventArgs e)
         {
-            // Futuro:
-            // - Montar Grafo a partir da árvore
-            // - Chamar Grafo.Dijkstra(origem, destino)
-            // - Preencher rotaEncontrada e dgvRotas e redesenhar o mapa
+            if (cidadeAtual == null)
+    {
+        MessageBox.Show("Selecione ou digite uma Cidade de Origem primeiro (no campo Nome).");
+        return;
+    }
 
-            MessageBox.Show("Dijkstra será implementado na classe Grafo. Aqui só vai chamar o Grafo depois.");
+    if (cbxCidadeDestino.SelectedItem == null)
+    {
+        MessageBox.Show("Selecione uma Cidade de Destino no combo.");
+        return;
+    }
+
+    string nomeOrigem = cidadeAtual.Nome.Trim();
+    string nomeDestino = cbxCidadeDestino.SelectedItem.ToString().Trim();
+
+    if (nomeOrigem == nomeDestino)
+    {
+        MessageBox.Show("Origem e Destino são a mesma cidade!");
+        return;
+    }
+
+    // 2. Busca o objeto Cidade de Destino na Árvore
+    Cidade destinoChave = new Cidade(nomeDestino);
+    if (!arvoreBuscaBinariaBalanceadaAVL.Existe(destinoChave))
+    {
+        MessageBox.Show("Cidade de destino não encontrada na base de dados.");
+        return;
+    }
+    Cidade cidadeDestino = arvoreBuscaBinariaBalanceadaAVL.Atual.Info;
+
+    // ======================================================================
+    // ALGORITMO DE DIJKSTRA
+    // ======================================================================
+
+    var distancias = new Dictionary<string, int>();
+    var anteriores = new Dictionary<string, Cidade>();
+    var visitados = new HashSet<string>();
+    var filaPrioridade = new List<Cidade>();
+
+    // Inicializa todas as cidades com distância infinita
+    List<Cidade> todasCidades = new List<Cidade>();
+    arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(todasCidades);
+
+    foreach (var c in todasCidades)
+    {
+        distancias[c.Nome.Trim()] = int.MaxValue;
+    }
+
+    // Configura a origem (Distância 0)
+    distancias[nomeOrigem] = 0;
+    filaPrioridade.Add(cidadeAtual);
+
+    while (filaPrioridade.Count > 0)
+    {
+        // Ordena para pegar a menor distância (Simula Fila de Prioridade)
+        filaPrioridade.Sort((a, b) => distancias[a.Nome.Trim()].CompareTo(distancias[b.Nome.Trim()]));
+        
+        Cidade u = filaPrioridade[0];
+        filaPrioridade.RemoveAt(0);
+
+        if (visitados.Contains(u.Nome.Trim())) continue;
+        visitados.Add(u.Nome.Trim());
+
+        // Se chegou no destino, para
+        if (u.Nome.Trim() == nomeDestino) break;
+
+        // Verifica vizinhos
+        u.Ligacoes.IniciarPercursoSequencial();
+        while (u.Ligacoes.PodePercorrer())
+        {
+            Ligacao ligacao = u.Ligacoes.Atual.Info;
+            string nomeVizinho = ligacao.Destino.Trim();
+
+            if (!visitados.Contains(nomeVizinho))
+            {
+                // Busca o objeto do vizinho na árvore
+                Cidade chaveVizinho = new Cidade(nomeVizinho);
+                if (arvoreBuscaBinariaBalanceadaAVL.Existe(chaveVizinho))
+                {
+                    Cidade vizinho = arvoreBuscaBinariaBalanceadaAVL.Atual.Info;
+                    
+                    // Relaxamento da aresta
+                    if (distancias[u.Nome.Trim()] != int.MaxValue)
+                    {
+                        int novaDistancia = distancias[u.Nome.Trim()] + ligacao.Distancia;
+
+                        if (novaDistancia < distancias[nomeVizinho])
+                        {
+                            distancias[nomeVizinho] = novaDistancia;
+                            anteriores[nomeVizinho] = u; // Guarda o caminho de volta
+                            
+                            if (!filaPrioridade.Contains(vizinho))
+                            {
+                                filaPrioridade.Add(vizinho);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ======================================================================
+    // EXIBIÇÃO DO RESULTADO
+    // ======================================================================
+
+    dgvRotas.Rows.Clear();
+    rotaEncontrada.Clear(); 
+
+    if (anteriores.ContainsKey(nomeDestino))
+    {
+        // Reconstrói o caminho de trás para frente
+        List<Cidade> caminho = new List<Cidade>();
+        Cidade passo = cidadeDestino;
+
+        while (passo != null)
+        {
+            caminho.Add(passo);
+            string nomePasso = passo.Nome.Trim();
+            
+            if (nomePasso == nomeOrigem) break;
+
+            if (anteriores.ContainsKey(nomePasso))
+                passo = anteriores[nomePasso];
+            else
+                passo = null;
         }
 
-        private void pbMapa_MouseClick_1(object sender, MouseEventArgs e)
+        caminho.Reverse(); // Inverte para ficar Origem -> Destino
+
+        int distanciaAcumulada = 0;
+        
+        // Preenche o Grid e a lista para o Mapa
+        for (int i = 0; i < caminho.Count - 1; i++)
         {
-            if (pbMapa.Width == 0 || pbMapa.Height == 0)
-                return;
-
-            // normaliza de pixels para 0..1
-            double xNorm = (double)e.X / pbMapa.Width;
-            double yNorm = (double)e.Y / pbMapa.Height;
-
-            // atualiza os controles de coordenada
-            udX.Value = (decimal)xNorm;
-            udY.Value = (decimal)yNorm;
-
-            // se quiser, você pode também já atualizar a cidadeAtual (em caso de alteração):
-            if (cidadeAtual != null && !cidadeAtual.Excluido)
+            Cidade atual = caminho[i];
+            Cidade proxima = caminho[i + 1];
+            
+            int distTrecho = 0;
+            
+            // Procura a distância exata na lista de ligações
+            atual.Ligacoes.IniciarPercursoSequencial();
+            while (atual.Ligacoes.PodePercorrer())
             {
-                cidadeAtual.X = xNorm;
-                cidadeAtual.Y = yNorm;
-                pbMapa.Invalidate();
-                pnlArvore.Refresh();
+                if (atual.Ligacoes.Atual.Info.Destino.Trim() == proxima.Nome.Trim())
+                {
+                    distTrecho = atual.Ligacoes.Atual.Info.Distancia;
+                    break;
+                }
             }
+
+            dgvRotas.Rows.Add(atual.Nome.Trim(), distTrecho);
+            distanciaAcumulada += distTrecho;
+            
+            rotaEncontrada.Add(atual.Nome.Trim());
+        }
+        rotaEncontrada.Add(cidadeDestino.Nome.Trim());
+
+        lbDistanciaTotal.Text = "Distância total: " + distanciaAcumulada + " km";
+        
+        // Pinta o caminho no mapa
+        pbMapa.Invalidate();
+        
+        MessageBox.Show($"Caminho encontrado com sucesso!\nDistância total: {distanciaAcumulada} km");
+    }
+    else
+    {
+        MessageBox.Show("Não foi encontrado nenhum caminho entre estas cidades.");
+        lbDistanciaTotal.Text = "Distância total: ---";
+    }
         }
     }
 }

@@ -168,6 +168,7 @@
             this.btnBuscarCaminho.TabIndex = 2;
             this.btnBuscarCaminho.Text = "Buscar caminhos";
             this.btnBuscarCaminho.UseVisualStyleBackColor = true;
+            this.btnBuscarCaminho.Click += new System.EventHandler(this.btnBuscarCaminho_Click);
             // 
             // cbxCidadeDestino
             // 
@@ -324,6 +325,7 @@
             this.btnAlterarCidade.TabIndex = 8;
             this.btnAlterarCidade.Text = "Alterar";
             this.btnAlterarCidade.UseVisualStyleBackColor = true;
+            this.btnAlterarCidade.Click += new System.EventHandler(this.btnAlterarCidade_Click);
             // 
             // btnBuscarCidade
             // 
@@ -419,7 +421,6 @@
             this.pbMapa.TabIndex = 0;
             this.pbMapa.TabStop = false;
             this.pbMapa.Paint += new System.Windows.Forms.PaintEventHandler(this.pbMapa_Paint);
-            this.pbMapa.MouseClick += new System.Windows.Forms.MouseEventHandler(this.pbMapa_MouseClick_1);
             // 
             // tpArvore
             // 
@@ -448,12 +449,13 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 18F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1604, 864);
+            this.ClientSize = new System.Drawing.Size(1370, 749);
             this.Controls.Add(this.tabControl1);
             this.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Form1";
             this.Text = "Projeto 4 2025 - Cadastro de Cidades e Caminhos - Busca de Caminhos";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing_1);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.tabControl1.ResumeLayout(false);
             this.tpCadastro.ResumeLayout(false);
