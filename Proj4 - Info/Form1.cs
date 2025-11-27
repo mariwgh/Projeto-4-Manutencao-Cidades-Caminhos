@@ -644,46 +644,48 @@ namespace Proj4
 
         private void pbMapa_Paint(object sender, PaintEventArgs e)
         {
-            // desenha o mapa de fundo
+            // 1. Desenha o mapa de fundo
             if (mapa != null)
             {
                 e.Graphics.DrawImage(mapa, 0, 0, pbMapa.Width, pbMapa.Height);
             }
 
+            // Habilita AntiAlias para ficar bonito (sem serrilhado)
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            // 2. Recupera todas as cidades
             List<Cidade> todasCidades = new List<Cidade>();
             arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(todasCidades);
 
+            // 3. Cria um dicionário de posições para acesso rápido
             Dictionary<string, PointF> posicoes = new Dictionary<string, PointF>();
-
-            // guarda posição das cidades
             foreach (Cidade c in todasCidades.Where(c => !c.Excluido))
             {
-                posicoes[c.Nome] = MapearCoordenada(c.X, c.Y);
+                posicoes[c.Nome.Trim()] = MapearCoordenada(c.X, c.Y);
             }
 
-            // desenha ligações como traços entre os pontos
-            using (Pen penLigacao = new Pen(Color.LightGray, 1))
+            // 4. DESENHA AS LIGAÇÕES (CAMINHOS)
+            // Mudei para Cinza Escuro e espessura 2 para ficar bem visível
+            using (Pen penLigacao = new Pen(Color.DimGray, 2))
             {
                 foreach (Cidade c in todasCidades)
                 {
-                    if (!c.Excluido)
+                    if (c.Excluido) continue;
+                    if (!posicoes.ContainsKey(c.Nome.Trim())) continue;
+
+                    PointF origem = posicoes[c.Nome.Trim()];
+
+                    c.Ligacoes.IniciarPercursoSequencial();
+                    while (c.Ligacoes.PodePercorrer())
                     {
-                        if (!posicoes.ContainsKey(c.Nome))
-                            continue;
+                        Ligacao lig = c.Ligacoes.Atual.Info;
+                        string nomeDestino = lig.Destino.Trim();
 
-                        PointF origem = posicoes[c.Nome];
-
-                        c.Ligacoes.IniciarPercursoSequencial();
-                        while (c.Ligacoes.PodePercorrer())
+                        if (posicoes.ContainsKey(nomeDestino))
                         {
-                            Ligacao lig = c.Ligacoes.Atual.Info;
-                            string nomeDestino = lig.Destino.Trim();
-
-                            if (!posicoes.ContainsKey(nomeDestino))
-                                continue;
-
-                            // desenha cada aresta só uma vez p nao duplicar traços
-                            if (string.Compare(c.Nome, nomeDestino, StringComparison.Ordinal) < 0)
+                            // Desenha apenas se Origem < Destino (alfabeticamente)
+                            // Isso evita desenhar a mesma linha duas vezes (ida e volta)
+                            if (string.Compare(c.Nome.Trim(), nomeDestino, StringComparison.Ordinal) < 0)
                             {
                                 PointF destino = posicoes[nomeDestino];
                                 e.Graphics.DrawLine(penLigacao, origem, destino);
@@ -693,15 +695,16 @@ namespace Proj4
                 }
             }
 
-            // se tiver rotaEncontrada (no futuro), podemos destacar em outra cor
+            // 5. DESENHA A ROTA ENCONTRADA (SE HOUVER)
             if (rotaEncontrada.Count > 1)
             {
-                using (Pen penRota = new Pen(Color.Red, 3))
+                // Rota em Vermelho grosso
+                using (Pen penRota = new Pen(Color.Red, 4))
                 {
                     for (int i = 0; i < rotaEncontrada.Count - 1; i++)
                     {
-                        string nomeA = rotaEncontrada[i];
-                        string nomeB = rotaEncontrada[i + 1];
+                        string nomeA = rotaEncontrada[i].Trim();
+                        string nomeB = rotaEncontrada[i + 1].Trim();
 
                         if (posicoes.ContainsKey(nomeA) && posicoes.ContainsKey(nomeB))
                         {
@@ -711,29 +714,37 @@ namespace Proj4
                 }
             }
 
-            // desenha cidades (vértices)
+            // 6. DESENHA AS BOLINHAS DAS CIDADES
             float raio = 5f;
-            using (Font fonte = new Font("Arial", 8))
+            using (Font fonte = new Font("Arial", 9, FontStyle.Bold)) // Fonte negrito
             {
                 foreach (Cidade c in todasCidades)
                 {
-                    if (!c.Excluido)
+                    if (c.Excluido) continue;
+                    if (!posicoes.ContainsKey(c.Nome.Trim())) continue;
+
+                    PointF pos = posicoes[c.Nome.Trim()];
+
+                    // Cor padrão: Azul
+                    Brush brush = Brushes.Blue;
+                    Brush brushTexto = Brushes.Black;
+
+                    // Se for a cidade selecionada: Vermelho
+                    if (cidadeAtual != null && c.Nome.Trim() == cidadeAtual.Nome.Trim())
                     {
-                        if (!posicoes.ContainsKey(c.Nome))
-                            continue;
-
-                        PointF pos = posicoes[c.Nome];
-                        Brush brush = Brushes.Blue;
-
-                        if (cidadeAtual != null && c.Nome == cidadeAtual.Nome)
-                            brush = Brushes.Red;
-
-                        if (rotaEncontrada.Contains(c.Nome))
-                            brush = Brushes.Green;
-
-                        e.Graphics.FillEllipse(brush, pos.X - raio, pos.Y - raio, 2 * raio, 2 * raio);
-                        e.Graphics.DrawString(c.Nome.Trim(), fonte, Brushes.Black, pos.X + raio, pos.Y - raio);
+                        brush = Brushes.Red;
                     }
+                    // Se fizer parte da rota: Verde
+                    else if (rotaEncontrada.Contains(c.Nome.Trim()))
+                    {
+                        brush = Brushes.Green;
+                    }
+
+                    // Desenha a bolinha
+                    e.Graphics.FillEllipse(brush, pos.X - raio, pos.Y - raio, 2 * raio, 2 * raio);
+
+                    // Desenha o nome da cidade um pouco deslocado
+                    e.Graphics.DrawString(c.Nome.Trim(), fonte, brushTexto, pos.X + raio + 2, pos.Y - raio - 2);
                 }
             }
         }
@@ -765,5 +776,39 @@ namespace Proj4
             }
         }
 
+        private void pbMapa_MouseClick(object sender, MouseEventArgs e)
+        {
+            // Verifica se o mapa tem tamanho válido para evitar divisão por zero
+            if (pbMapa.Width == 0 || pbMapa.Height == 0) return;
+
+            // Calcula a proporção (0 a 1) baseada no local do clique (e.X, e.Y)
+            // Exemplo: Se clicou no meio (500) e largura é 1000, resultado é 0.5
+            double xProporcional = (double)e.X / pbMapa.Width;
+            double yProporcional = (double)e.Y / pbMapa.Height;
+
+            // Arredonda para 4 casas decimais para ficar bonito no display
+            xProporcional = Math.Round(xProporcional, 4);
+            yProporcional = Math.Round(yProporcional, 4);
+
+            // Joga nos campos da tela (NumericUpDown)
+            udX.Value = (decimal)xProporcional;
+            udY.Value = (decimal)yProporcional;
+
+            // Opcional: Se já tiver uma cidade selecionada e você quiser mover ela só clicando:
+            /*
+            if (cidadeAtual != null && !cidadeAtual.Excluido)
+            {
+                // Pergunta se quer alterar a posição da cidade atual
+                var resp = MessageBox.Show($"Deseja mover '{cidadeAtual.Nome.Trim()}' para este local?", 
+                                           "Mover Cidade", MessageBoxButtons.YesNo);
+                if (resp == DialogResult.Yes)
+                {
+                    cidadeAtual.X = xProporcional;
+                    cidadeAtual.Y = yProporcional;
+                    pbMapa.Invalidate();
+                }
+            }
+            */
+        }
     }
 }
