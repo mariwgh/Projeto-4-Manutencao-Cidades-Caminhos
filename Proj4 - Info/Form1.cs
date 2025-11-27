@@ -111,7 +111,7 @@ namespace Proj4
             }
         }
 
-        /// grava cidades em binário (cidades.dat) e ligações em texto (GrafoOnibusSaoPaulo.txt)
+        // grava cidades em binário (cidades.dat) e ligações em texto (GrafoOnibusSaoPaulo.txt)
         private void GravarDados()
         {
             List<Cidade> lista = new List<Cidade>();
@@ -327,7 +327,7 @@ namespace Proj4
                 }
             }
 
-            // zera a lista original (via Reflection)
+            // zera a lista original (por reflection) p n mexer na classe lista simplas
             var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
 
             typeof(ListaSimples<Ligacao>).GetField("primeiro", flags)?.SetValue(lista, null);
@@ -505,7 +505,7 @@ namespace Proj4
                         passo = null;
                 }
 
-                caminho.Reverse(); // inverte para ficar Origem -> Destino
+                caminho.Reverse(); // inverte para ficar origem -> destino
 
                 int distanciaAcumulada = 0;
 
@@ -640,32 +640,29 @@ namespace Proj4
             return new PointF(posX, posY);
         }
 
-        // clique no mapa: define x e y normalizados para incluir/alterar cidades
-
         private void pbMapa_Paint(object sender, PaintEventArgs e)
         {
-            // 1. Desenha o mapa de fundo
+            // desenha o mapa de fundo
             if (mapa != null)
             {
                 e.Graphics.DrawImage(mapa, 0, 0, pbMapa.Width, pbMapa.Height);
             }
 
-            // Habilita AntiAlias para ficar bonito (sem serrilhado)
             e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            // 2. Recupera todas as cidades
             List<Cidade> todasCidades = new List<Cidade>();
             arvoreBuscaBinariaBalanceadaAVL.VisitarEmOrdem(todasCidades);
 
-            // 3. Cria um dicionário de posições para acesso rápido
             Dictionary<string, PointF> posicoes = new Dictionary<string, PointF>();
-            foreach (Cidade c in todasCidades.Where(c => !c.Excluido))
+            foreach (Cidade c in todasCidades)
             {
-                posicoes[c.Nome.Trim()] = MapearCoordenada(c.X, c.Y);
+                if (!c.Excluido)
+                {
+                    posicoes[c.Nome.Trim()] = MapearCoordenada(c.X, c.Y);
+                }
             }
 
-            // 4. DESENHA AS LIGAÇÕES (CAMINHOS)
-            // Mudei para Cinza Escuro e espessura 2 para ficar bem visível
+            // desenha os caminhos
             using (Pen penLigacao = new Pen(Color.DimGray, 2))
             {
                 foreach (Cidade c in todasCidades)
@@ -683,9 +680,7 @@ namespace Proj4
 
                         if (posicoes.ContainsKey(nomeDestino))
                         {
-                            // Desenha apenas se Origem < Destino (alfabeticamente)
-                            // Isso evita desenhar a mesma linha duas vezes (ida e volta)
-                            if (string.Compare(c.Nome.Trim(), nomeDestino, StringComparison.Ordinal) < 0)
+                            if (c.Nome.Trim().CompareTo(nomeDestino) < 0)
                             {
                                 PointF destino = posicoes[nomeDestino];
                                 e.Graphics.DrawLine(penLigacao, origem, destino);
@@ -695,10 +690,8 @@ namespace Proj4
                 }
             }
 
-            // 5. DESENHA A ROTA ENCONTRADA (SE HOUVER)
             if (rotaEncontrada.Count > 1)
             {
-                // Rota em Vermelho grosso
                 using (Pen penRota = new Pen(Color.Red, 4))
                 {
                     for (int i = 0; i < rotaEncontrada.Count - 1; i++)
@@ -714,9 +707,8 @@ namespace Proj4
                 }
             }
 
-            // 6. DESENHA AS BOLINHAS DAS CIDADES
             float raio = 5f;
-            using (Font fonte = new Font("Arial", 9, FontStyle.Bold)) // Fonte negrito
+            using (Font fonte = new Font("Arial", 9, FontStyle.Bold)) 
             {
                 foreach (Cidade c in todasCidades)
                 {
@@ -725,25 +717,24 @@ namespace Proj4
 
                     PointF pos = posicoes[c.Nome.Trim()];
 
-                    // Cor padrão: Azul
                     Brush brush = Brushes.Blue;
                     Brush brushTexto = Brushes.Black;
 
-                    // Se for a cidade selecionada: Vermelho
+                    // se cidade selecionada -> red
                     if (cidadeAtual != null && c.Nome.Trim() == cidadeAtual.Nome.Trim())
                     {
                         brush = Brushes.Red;
                     }
-                    // Se fizer parte da rota: Verde
+                    // se faz parte da rota -> green
                     else if (rotaEncontrada.Contains(c.Nome.Trim()))
                     {
                         brush = Brushes.Green;
                     }
 
-                    // Desenha a bolinha
+                    // desenha a bolinha
                     e.Graphics.FillEllipse(brush, pos.X - raio, pos.Y - raio, 2 * raio, 2 * raio);
 
-                    // Desenha o nome da cidade um pouco deslocado
+                    // desenha o nome da cidade um pouco deslocado
                     e.Graphics.DrawString(c.Nome.Trim(), fonte, brushTexto, pos.X + raio + 2, pos.Y - raio - 2);
                 }
             }
@@ -754,7 +745,21 @@ namespace Proj4
             arvoreBuscaBinariaBalanceadaAVL.Desenhar(pnlArvore);
         }
 
-       
+        private void pbMapa_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (pbMapa.Width == 0 || pbMapa.Height == 0) return;
+
+            double xProporcional = (double)e.X / pbMapa.Width;
+            double yProporcional = (double)e.Y / pbMapa.Height;
+
+            xProporcional = Math.Round(xProporcional, 4);
+            yProporcional = Math.Round(yProporcional, 4);
+
+            udX.Value = (decimal)xProporcional;
+            udY.Value = (decimal)yProporcional;
+        }
+
+
         // fechamento
 
         private void Form1_FormClosing_1(object sender, FormClosingEventArgs e)
@@ -776,39 +781,5 @@ namespace Proj4
             }
         }
 
-        private void pbMapa_MouseClick(object sender, MouseEventArgs e)
-        {
-            // Verifica se o mapa tem tamanho válido para evitar divisão por zero
-            if (pbMapa.Width == 0 || pbMapa.Height == 0) return;
-
-            // Calcula a proporção (0 a 1) baseada no local do clique (e.X, e.Y)
-            // Exemplo: Se clicou no meio (500) e largura é 1000, resultado é 0.5
-            double xProporcional = (double)e.X / pbMapa.Width;
-            double yProporcional = (double)e.Y / pbMapa.Height;
-
-            // Arredonda para 4 casas decimais para ficar bonito no display
-            xProporcional = Math.Round(xProporcional, 4);
-            yProporcional = Math.Round(yProporcional, 4);
-
-            // Joga nos campos da tela (NumericUpDown)
-            udX.Value = (decimal)xProporcional;
-            udY.Value = (decimal)yProporcional;
-
-            // Opcional: Se já tiver uma cidade selecionada e você quiser mover ela só clicando:
-            /*
-            if (cidadeAtual != null && !cidadeAtual.Excluido)
-            {
-                // Pergunta se quer alterar a posição da cidade atual
-                var resp = MessageBox.Show($"Deseja mover '{cidadeAtual.Nome.Trim()}' para este local?", 
-                                           "Mover Cidade", MessageBoxButtons.YesNo);
-                if (resp == DialogResult.Yes)
-                {
-                    cidadeAtual.X = xProporcional;
-                    cidadeAtual.Y = yProporcional;
-                    pbMapa.Invalidate();
-                }
-            }
-            */
-        }
     }
 }
